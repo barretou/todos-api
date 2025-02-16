@@ -20,7 +20,6 @@ namespace TodoApi.Context
             modelBuilder.Entity<TaskModel>().Property(t => t.Description).HasColumnName("description");
             modelBuilder.Entity<TaskModel>().Property(t => t.CreatedDate).HasColumnName("create_date").IsRequired();
             modelBuilder.Entity<TaskModel>().Property(t => t.IsCompleted).HasColumnName("is_completed");
-
         }
     }
 }
