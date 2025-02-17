@@ -8,6 +8,7 @@ namespace TodoApi.Context
         public ApplicationContext(DbContextOptions<ApplicationContext> options) : base(options)
         { }
         public DbSet<TaskModel> Tasks { get; set; }
+        public DbSet<UserModel> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -20,6 +21,13 @@ namespace TodoApi.Context
             modelBuilder.Entity<TaskModel>().Property(t => t.Description).HasColumnName("description");
             modelBuilder.Entity<TaskModel>().Property(t => t.CreatedDate).HasColumnName("create_date").IsRequired();
             modelBuilder.Entity<TaskModel>().Property(t => t.IsCompleted).HasColumnName("is_completed");
+            modelBuilder.Entity<TaskModel>().Property(t => t.UserId).HasColumnName("user_id");
+
+            modelBuilder.Entity<TaskModel>()
+                .HasOne(t => t.User)
+                .WithMany(u => u.Tasks)
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

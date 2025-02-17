@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using TodoApi.Context;
-using TodoApi.DTO;
+using TodoApi.DTO.Tasks;
 using TodoApi.Models.Entities;
 
 namespace TodoApi.Services
@@ -14,28 +14,39 @@ namespace TodoApi.Services
             _context = context;
         }
 
+        // Get all tasks
         public async Task<List<TaskModel>> GetAllTasksAsync()
         {
-            return await _context.Tasks.ToListAsync();
+            return await _context.Tasks.Include(t => t.User).ToListAsync();
         }
 
         public async Task<TaskModel> GetTaskByIdAsync(int id)
         {
-            var task = await _context.Tasks.FindAsync(id);
-            return task == null ? throw new KeyNotFoundException($"Task with ID {id} not found") : task;
+            var task = await _context.Tasks.Include(t => t.User).FirstOrDefaultAsync(t => t.Id == id);
+            if (task == null)
+                throw new KeyNotFoundException($"Task with ID {id} not found");
+
+            return task;
         }
 
-        public async Task<TaskModel> CreateTaskAsync(TaskCreateDTO taskDto) 
+        public async Task<TaskModel> CreateTaskAsync(int userId, CreateTaskDTO DTO)
         {
-            if (taskDto == null)
-                throw new ArgumentNullException(nameof(taskDto));
+            if (DTO == null)
+                throw new ArgumentNullException(nameof(DTO));
+
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("User not found");
+            }
 
             var task = new TaskModel
             {
-                Name = taskDto.Name,
-                Description = taskDto.Description,
-                IsCompleted = taskDto.IsCompleted,
-                CreatedDate = DateTime.UtcNow
+                Name = DTO.Name,
+                Description = DTO.Description,
+                IsCompleted = DTO.IsCompleted,
+                CreatedDate = DateTime.UtcNow,
+                UserId = userId
             };
 
             _context.Tasks.Add(task);
@@ -44,15 +55,24 @@ namespace TodoApi.Services
             return task;
         }
 
-        public async Task<TaskModel> UpdateTaskAsync(int id, TaskModel updatedTask)
+        public async Task<TaskModel> UpdateTaskAsync(int id, int userId, UpdateTaskDTO DTO)
         {
-            var task = await _context.Tasks.FindAsync(id);
-            if (updatedTask == null)
-                throw new ArgumentNullException(nameof(updatedTask));
+            if (DTO == null)
+                throw new ArgumentNullException(nameof(DTO));
 
-            task.Name = updatedTask.Name;
-            task.Description = updatedTask.Description;
-            task.IsCompleted = updatedTask.IsCompleted;
+            var task = await _context.Tasks.FindAsync(id);
+            if (task == null)
+                throw new KeyNotFoundException($"Task with ID {id} not found");
+
+            if (_context.Users.Find(userId) == null)
+            {
+                throw new InvalidOperationException("User associated with this task not found");
+            }
+
+            task.Name = DTO.Name;
+            task.Description = DTO.Description;
+            task.IsCompleted = DTO.IsCompleted;
+            task.UserId = userId;
 
             _context.Tasks.Update(task);
             await _context.SaveChangesAsync();
@@ -71,6 +91,5 @@ namespace TodoApi.Services
 
             return true;
         }
-
     }
 }

@@ -1,7 +1,8 @@
-﻿namespace TodoApi.DTO
+﻿namespace TodoApi.DTO.Tasks
 {
-    public class TaskCreateDTO
+    public class UpdateTaskDTO
     {
+        public int Id { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
         public bool IsCompleted { get; set; }
